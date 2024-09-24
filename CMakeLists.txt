@@ -6,6 +6,8 @@ cmake_minimum_required(VERSION 3.9)
 # Keep the version below in sync with the one in db.h
 project(leveldb VERSION 1.23.0 LANGUAGES C CXX)
 
+set(CUSTOM 1)
+
 # C standard can be overridden when this is used as a sub-project.
 if(NOT CMAKE_C_STANDARD)
   # This project can use C11, but will gracefully decay down to C89.
@@ -240,21 +242,33 @@ target_sources(leveldb
     "${LEVELDB_PUBLIC_INCLUDE_DIR}/table_builder.h"
     "${LEVELDB_PUBLIC_INCLUDE_DIR}/table.h"
     "${LEVELDB_PUBLIC_INCLUDE_DIR}/write_batch.h"
+    
+    "${LEVELDB_PUBLIC_INCLUDE_DIR}/custom_env.h"
 )
 
-if (WIN32)
+if (CUSTOM)
   target_sources(leveldb
-    PRIVATE
-      "util/env_windows.cc"
-      "util/windows_logger.h"
+  PRIVATE
+    "util/env_custom.cc"
+    "util/custom_logger.h"
   )
-else (WIN32)
+  # target_sources(leveldb
+  #  PUBLIC
+  #   "${LEVELDB_PUBLIC_INCLUDE_DIR}/custom_env.h"
+  # )
+elseif (WIN32)
+  target_sources(leveldb
+  PRIVATE
+    "util/env_windows.cc"
+    "util/windows_logger.h"
+  )
+else ()
   target_sources(leveldb
     PRIVATE
       "util/env_posix.cc"
       "util/posix_logger.h"
   )
-endif (WIN32)
+endif ()
 
 # MemEnv is not part of the interface and could be pulled to a separate library.
 target_sources(leveldb
@@ -337,12 +351,12 @@ if(LEVELDB_BUILD_TESTS)
   set(build_gmock ON)
 
   # This project is tested using GoogleTest.
-  add_subdirectory("third_party/googletest")
+  # add_subdirectory("third_party/googletest")
 
   # This project uses Google benchmark for benchmarking.
-  set(BENCHMARK_ENABLE_TESTING OFF CACHE BOOL "" FORCE)
-  set(BENCHMARK_ENABLE_EXCEPTIONS OFF CACHE BOOL "" FORCE)
-  add_subdirectory("third_party/benchmark")
+  # set(BENCHMARK_ENABLE_TESTING OFF CACHE BOOL "" FORCE)
+  # set(BENCHMARK_ENABLE_EXCEPTIONS OFF CACHE BOOL "" FORCE)
+  # add_subdirectory("third_party/benchmark")
 
   # GoogleTest triggers a missing field initializers warning.
   if(LEVELDB_HAVE_NO_MISSING_FIELD_INITIALIZERS)
